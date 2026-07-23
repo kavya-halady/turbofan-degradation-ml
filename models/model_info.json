@@ -1,0 +1,20 @@
+{
+  "model_type": "xgboost_tuned",
+  "params": {
+    "n_estimators": 431,
+    "max_depth": 9,
+    "learning_rate": 0.014412943821702674,
+    "subsample": 0.708849623711799,
+    "colsample_bytree": 0.601734344848967,
+    "min_child_weight": 2,
+    "reg_alpha": 0.031741631962403004,
+    "reg_lambda": 0.0027788890823757214,
+    "random_state": 42
+  },
+  "metrics": {
+    "rmse": 11.611965953097625,
+    "mae": 7.917902946472168,
+    "r2": 0.8227247595787048,
+    "nasa_score": 29218.752279779095
+  }
+}

@@ -1,0 +1,36 @@
+# --- Core data & ML ---
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+xgboost>=2.0
+lightgbm>=4.3
+joblib>=1.3
+
+# --- Experiment tracking & tuning ---
+mlflow>=2.12
+optuna>=3.6
+
+# --- API / serving ---
+fastapi>=0.111
+uvicorn[standard]>=0.29
+pydantic>=2.7
+
+# --- Monitoring & drift detection ---
+evidently>=0.4.25
+
+# --- Config & environment ---
+python-dotenv>=1.0
+pyyaml>=6.0
+
+# --- Notebooks / EDA (dev only) ---
+jupyter>=1.0
+matplotlib>=3.8
+seaborn>=0.13
+
+# --- Testing ---
+pytest>=8.2
+httpx>=0.27          # required by FastAPI's TestClient
+
+# --- Code quality (dev only) ---
+black>=24.4
+flake8>=7.0

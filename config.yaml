@@ -1,0 +1,25 @@
+# TurbineIQ pipeline configuration
+
+data:
+  subset: FD001
+  processed_dir: data/processed
+  train_file: train_FD001_split.csv
+  val_file: val_FD001_split.csv
+  test_file: test_FD001_features.csv
+
+target: RUL
+id_columns: [engine_id, cycle]   # excluded from features, kept for grouping/plots
+
+model:
+  output_dir: models
+  xgboost:
+    n_estimators: 300
+    max_depth: 6
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    random_state: 42
+
+mlflow:
+  tracking_uri: "sqlite:///mlflow.db"   # local, no server needed; swap for a remote URI later
+  experiment_name: turbineiq-rul

@@ -1,0 +1,16 @@
+# Ignore virtual environment
+venv/
+
+# Ignore MLflow tracking DB
+mlflow.db
+
+# Ignore MLflow runs
+mlruns/
+
+# Ignore large datasets and assets
+*.zip
+
+
+# Ignore OS/system files
+.DS_Store
+*.log

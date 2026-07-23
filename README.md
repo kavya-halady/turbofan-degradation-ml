@@ -146,7 +146,8 @@ turbineiq/
 ```bash
 git clone https://github.com/kavya-halady/turbofan-degradation-ml.git
 cd turbofan-degradation-ml
-python -m venv venv && source venv/bin/activate
+sudo apt install python3.11-venv
+python3.11 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
 # 1. Get the data (place raw C-MAPSS files in data/raw/)

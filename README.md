@@ -1,4 +1,4 @@
-# ✈️ turbofan-degradation-ml— Predictive Maintenance MLOps Pipeline
+# ✈️ turbofan-degradation-ml — Predictive Maintenance MLOps Pipeline
 
 **Predict Remaining Useful Life (RUL) of industrial turbofan engines from sensor telemetry, served via a production-grade ML pipeline with monitoring and automated retraining.**
 
@@ -146,46 +146,73 @@ turbineiq/
 ```bash
 git clone https://github.com/kavya-halady/turbofan-degradation-ml.git
 cd turbofan-degradation-ml
+
 sudo apt install python3.11-venv
 python3.11 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-# 1. Get the data (place raw C-MAPSS files in data/raw/)
-python src/data/ingest.py
+# 1. Get the data: download CMAPSSData.zip from NASA's Open Data Portal
+#    (https://data.nasa.gov/dataset/cmapss-jet-engine-simulated-data), unzip it,
+#    and place train_FD001.txt, test_FD001.txt, RUL_FD001.txt in data/raw/
 
-# 2. Build features
-python src/features/build_features.py
+# 2. Preprocess (loads raw files via ingest.py internally, cleans, computes RUL, normalizes)
+python3.11 src/data/preprocess.py
 
-# 3. Train & evaluate
-python src/models/train.py --config config.yaml
-python src/models/evaluate.py
+# 3. Feature engineering (rolling stats, slopes, cumulative drift)
+python3.11 src/features/build_features.py
 
-# 4. Serve the model
+# 4. Split into train/val by engine_id (real test set stays untouched)
+python3.11 src/data_split.py
+
+# 5. Train baseline + XGBoost, logs to MLflow, saves best model
+python3.11 src/models/train.py --config config.yaml
+
+# 6. Evaluate: NASA/PHM08 score + 5-fold grouped cross-validation + holdout test
+python3.11 src/models/evaluate.py --config config.yaml
+
+# 7. (Optional but recommended) Optuna hyperparameter tuning
+#    30 trials x 3-fold CV = ~90 XGBoost fits on ~16,700 rows.
+#    Takes several minutes (5-15 depending on CPU) -- this is normal, not a hang.
+#    Only replaces the saved model if it actually beats it on the holdout test set.
+python3.11 src/models/tune.py --config config.yaml --n-trials 30
+
+# 8. Serve the model
 uvicorn src.api.main:app --reload
+# then open http://127.0.0.1:8000/docs for the interactive Swagger UI
 
-# 5. Or run everything containerized
-docker-compose up --build
+# 9. (Not yet implemented) containerized deployment
+# docker-compose up --build
 ```
 
-Example API call once running:
+Example API call once running (see `GET /model-info` first for the exact list of
+required sensor/setting columns your trained model expects -- it varies slightly
+depending on which sensors got dropped as zero-variance in Step 1):
 ```bash
 curl -X POST http://localhost:8000/predict/rul \
   -H "Content-Type: application/json" \
-  -d '{"engine_id": 12, "cycle_window": [...sensor readings...]}'
+  -d '{
+    "engine_id": 1,
+    "cycles": [
+      {"values": {"sensor_2": 0.55, "sensor_3": 0.62, "...": "... one entry per required base column"}},
+      {"values": {"sensor_2": 0.57, "sensor_3": 0.60, "...": "... at least 5 cycles recommended"}}
+    ]
+  }'
 ```
 
 ---
 
 ## 📈 Suggested Milestones (learn-as-you-build checklist)
 
-- [ ] Load and explore FD001 in a notebook, plot sensor degradation curves per engine
-- [ ] Build the cleaning + RUL-labeling script, write a unit test for it
-- [ ] Engineer rolling-window features, compare model performance with vs. without them
-- [ ] Train baseline vs. XGBoost, log both to MLflow, compare in the MLflow UI
-- [ ] Tune hyperparameters with Optuna, beat your baseline on the NASA scoring function
-- [ ] Wrap the best model in FastAPI, test locally with `curl` / Postman
+- [x] Load and explore FD001, clean data, compute RUL, normalize (`src/data/ingest.py`, `preprocess.py`)
+- [x] Engineer rolling-window, slope, and cumulative-drift features (`src/features/build_features.py`)
+- [x] Split train/val by engine_id with a leakage assertion (`src/data_split.py`)
+- [x] Train baseline vs. XGBoost, log both to MLflow, compare in the MLflow UI (`src/models/train.py`)
+- [x] Evaluate with the NASA/PHM08 score + 5-fold grouped CV + holdout test (`src/models/evaluate.py`)
+- [x] Tune hyperparameters with Optuna, beat the baseline on holdout RMSE (`src/models/tune.py`)
+- [x] Wrap the best model in FastAPI, test locally via Swagger UI at `/docs` (`src/api/main.py`, `schemas.py`)
 - [ ] Dockerize the API, run it in a container
 - [ ] Add an Evidently drift report comparing FD001 test data to FD002 (different operating condition) to *see* drift in action
+- [ ] Write pytest coverage for the pipeline (`tests/`)
 - [ ] Set up a GitHub Actions workflow that runs tests on every push
 - [ ] (Stretch) Add a scheduled retraining workflow
 - [ ] (Stretch) Extend to FD002–FD004 for multi-condition robustness
